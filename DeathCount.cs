@@ -32,10 +32,10 @@ namespace DeathCount
             TShock.DB.Query(
                 @"
                     CREATE TABLE IF NOT EXISTS Deathcount (
-                    World INTEGER NOT NULL,
-                    WorldName TEXT NOT NULL,
-                    Username TEXT NOT NULL,
-                    Deaths INTEGER DEFAULT 0
+                        World INTEGER NOT NULL,
+                        WorldName TEXT NOT NULL,
+                        Username TEXT NOT NULL,
+                        Deaths INTEGER DEFAULT 0
                     );
                 "
             );
