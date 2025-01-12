@@ -43,13 +43,18 @@ namespace DeathCount
 
         private void OnPlayerLogin(PlayerPostLoginEventArgs e)
         {
+            if (e.Player == null || !e.Player.Active)
+                return;
+
             UserAccount account = e.Player.Account;
             using QueryResult reader = TShock.DB.QueryReader(
                 $@"
                     SELECT * FROM Deathcount
-                    WHERE World={Main.worldID} AND Username='{account.Name}'
+                    WHERE World=@0 AND Username=@1
                     LIMIT 1;
-                "
+                ",
+                Main.worldID,
+                account.Name
             );
 
             if (!reader.Read())
@@ -57,8 +62,11 @@ namespace DeathCount
                 TShock.DB.Query(
                     $@"
                         INSERT INTO Deathcount (World, Worldname, Username)
-                        VALUES ({Main.worldID}, '{Main.worldName}', '{account.Name}');
-                    "
+                        VALUES (@0, @1, @2);
+                    ",
+                    Main.worldID,
+                    Main.worldName,
+                    account.Name
                 );
                 TShock.Log.ConsoleInfo(
                     $"[Death Counter DB] Created new death counter row for {account.Name}."
@@ -68,56 +76,74 @@ namespace DeathCount
 
         private void ViewDeath(CommandArgs args)
         {
-            if (args.Player != null && args.Player.Active)
+            TSPlayer player = args.Player;
+
+            if (
+                player == null
+                || !player.Active
+                || (args.Parameters.Count > 0 && args.Parameters[0].ToLower() == "all")
+            )
             {
-                if (args.Parameters.Count == 0)
-                {
-                    using QueryResult query = TShock.DB.QueryReader(
-                        $@"
-                        SELECT Deaths FROM Deathcount
-                        WHERE World={Main.worldID} AND Username='{args.Player.Account.Name}'
-                        LIMIT 1;
-                    "
-                    );
-                    if (query.Read())
-                    {
-                        int death = query.Reader.Get<int>("Deaths");
-                        args.Player.SendInfoMessage(
-                            $"You died {death} {(death == 1 ? "time" : "times")}."
-                        );
-                    }
-                }
-                else if (args.Parameters[0].ToLower() == "all")
-                {
-                    using QueryResult query = TShock.DB.QueryReader(
-                        $@"
+                using QueryResult query = TShock.DB.QueryReader(
+                    $@"
                         SELECT Username, Deaths FROM Deathcount
-                        WHERE World={Main.worldID}
-                        ORDER BY Deaths DESC, Username ASC;
-                        "
+                        WHERE World=@0
+                        ORDER BY Deaths ASC;
+                        ",
+                    Main.worldID
+                );
+                Dictionary<string, int> playerdeaths = new();
+                List<string> deathstrings = new() { "--- Death Counts ---" };
+
+                while (query.Read())
+                {
+                    string username = query.Reader.Get<string>("Username");
+                    int deathcount = query.Reader.Get<int>("Deaths");
+                    if (deathcount <= 0)
+                        continue;
+                    playerdeaths[username] = deathcount;
+                }
+
+                foreach (string username in playerdeaths.Keys)
+                {
+                    string? playername = TShock
+                        .Players.FirstOrDefault(player => player?.Account?.Name == username)
+                        ?.Name;
+
+                    deathstrings.Add(
+                        $"{username}{(playername != null ? $"({playername})" : "")} - {playerdeaths[username]}"
                     );
-                    Dictionary<string, int> playerdeaths = new();
-                    List<string> deathstrings = new() { "--- Death Counts ---" };
+                }
 
-                    while (query.Read())
-                    {
-                        string username = query.Reader.Get<string>("Username");
-                        int deathcount = query.Reader.Get<int>("Deaths");
-                        playerdeaths[username] = deathcount;
-                    }
+                if (player != null && player.Active)
+                {
+                    player.SendMessage(string.Join("\n", deathstrings), Color.Green);
+                }
+                else
+                {
+                    TShock.Log.ConsoleInfo(string.Join("\n", deathstrings));
+                }
+                return;
+            }
 
-                    foreach (string username in playerdeaths.Keys)
-                    {
-                        string? playername = TShock
-                            .Players.FirstOrDefault(player => player?.Account?.Name == username)
-                            ?.Name;
-
-                        deathstrings.Add(
-                            $"{username}{(playername != null ? $"({playername})" : "")}: {playerdeaths[username]}"
-                        );
-                    }
-
-                    args.Player.SendInfoMessage(string.Join("\n", deathstrings));
+            if (args.Parameters.Count == 0)
+            {
+                using QueryResult query = TShock.DB.QueryReader(
+                    $@"
+                        SELECT Deaths FROM Deathcount
+                        WHERE World=@0 AND Username=@1
+                        LIMIT 1;
+                    ",
+                    Main.worldID,
+                    args.Player.Account.Name
+                );
+                if (query.Read())
+                {
+                    int death = query.Reader.Get<int>("Deaths");
+                    args.Player.SendMessage(
+                        $"You died {death} {(death == 1 ? "time" : "times")}.\nType '/death all' to see all death counts.",
+                        Color.Green
+                    );
                 }
             }
         }
@@ -141,8 +167,10 @@ namespace DeathCount
                 $@"
                     UPDATE Deathcount
                     SET Deaths=Deaths + 1
-                    WHERE Username='{Username}' AND World={Main.worldID};
-                "
+                    WHERE Username=@0 AND World=@1;
+                ",
+                Username,
+                Main.worldID
             );
 
             if (queryAffected < 1)
