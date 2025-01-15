@@ -45,30 +45,40 @@ namespace DeathCount
         {
             if (e.Player == null)
                 return;
-
             UserAccount account = e.Player.Account;
-            using QueryResult reader = TShock.DB.QueryReader(
-                $@"
+            try
+            {
+                using QueryResult reader = TShock.DB.QueryReader(
+                    $@"
                     SELECT * FROM Deathcount
                     WHERE World=@0 AND Username=@1
                     LIMIT 1;
                 ",
-                Main.worldID,
-                account.Name
-            );
+                    Main.worldID,
+                    account.Name
+                );
 
-            if (!reader.Read())
-            {
-                TShock.DB.Query(
-                    $@"
+                if (!reader.Read())
+                {
+                    TShock.DB.Query(
+                        $@"
                         INSERT INTO Deathcount (World, Worldname, Username)
                         VALUES (@0, @1, @2);
                     ",
-                    Main.worldID,
-                    Main.worldName,
-                    account.Name
+                        Main.worldID,
+                        Main.worldName,
+                        account.Name
+                    );
+                    TShock.Log.ConsoleInfo(
+                        $"[Death Counter] New record created for {account.Name}."
+                    );
+                }
+            }
+            catch (Exception ex)
+            {
+                TShock.Log.ConsoleError(
+                    $"[Death Counter] Error handling player login for {account.Name}: {ex.Message}"
                 );
-                TShock.Log.ConsoleInfo($"[Death Counter] New record created for {account.Name}.");
             }
         }
 
