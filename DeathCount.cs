@@ -43,7 +43,7 @@ namespace DeathCount
 
         private void OnPlayerLogin(PlayerPostLoginEventArgs e)
         {
-            if (e.Player == null || !e.Player.Active)
+            if (e.Player == null)
                 return;
 
             UserAccount account = e.Player.Account;
@@ -68,9 +68,7 @@ namespace DeathCount
                     Main.worldName,
                     account.Name
                 );
-                TShock.Log.ConsoleInfo(
-                    $"[Death Counter DB] Created new death counter row for {account.Name}."
-                );
+                TShock.Log.ConsoleInfo($"[Death Counter] New record created for {account.Name}.");
             }
         }
 
@@ -141,7 +139,7 @@ namespace DeathCount
                 {
                     int death = query.Reader.Get<int>("Deaths");
                     args.Player.SendMessage(
-                        $"You died {death} {(death == 1 ? "time" : "times")}.\nType '/death all' to see all death counts.",
+                        $"You have died {death} {(death == 1 ? "time" : "times")}.\nType '/death all' to see everyone's death counts.",
                         Color.Green
                     );
                 }
@@ -176,7 +174,7 @@ namespace DeathCount
             if (queryAffected < 1)
             {
                 TShock.Utils.Broadcast(
-                    $"[Death Counter ERROR] Death of {Username} was not recorded.",
+                    $"[Death Counter] Failed to record death for {Username}.",
                     Color.Beige
                 );
             }
