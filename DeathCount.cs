@@ -123,15 +123,7 @@ namespace DeathCount
                     );
                 }
 
-                if (player != null && player.Active)
-                {
-                    player.SendMessage(string.Join("\n", deathstrings), Color.Green);
-                }
-                else
-                {
-                    TShock.Log.ConsoleInfo(string.Join("\n", deathstrings));
-                }
-                return;
+                player?.SendMessage(string.Join("\n", deathstrings), Color.Green);
             }
 
             if (args.Parameters.Count == 0)
