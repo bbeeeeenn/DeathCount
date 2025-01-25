@@ -119,11 +119,11 @@ namespace DeathCount
                         ?.Name;
 
                     deathstrings.Add(
-                        $"{username}{(playername != null ? $"({playername})" : "")} - {playerdeaths[username]}"
+                        $"{username}{(playername != null ? $"({playername})" : "")} - [c/FFF014:{playerdeaths[username]}]"
                     );
                 }
 
-                player?.SendMessage(string.Join("\n", deathstrings), Color.Green);
+                player?.SendMessage(string.Join("\n", deathstrings), Color.White);
             }
 
             if (args.Parameters.Count == 0)
@@ -141,8 +141,8 @@ namespace DeathCount
                 {
                     int death = query.Reader.Get<int>("Deaths");
                     args.Player.SendMessage(
-                        $"You have died {death} {(death == 1 ? "time" : "times")}.\nType '/death all' to see everyone's death counts.",
-                        Color.Green
+                        $"You have died [c/FFF014:{death}] {(death == 1 ? "time" : "times")}.\nType '/death all' to see everyone's death counts.",
+                        Color.White
                     );
                 }
             }
