@@ -160,8 +160,12 @@ namespace DeathCount
                 new MemoryStream(args.Msg.readBuffer, args.Index, args.Length)
             );
             var playerId = reader.ReadByte();
+            TSPlayer player = TShock.Players[playerId];
 
-            string Username = TShock.Players[playerId].Account.Name;
+            if (player == null || !player.IsLoggedIn)
+                return;
+
+            string Username = player.Account.Name;
 
             int queryAffected = TShock.DB.Query(
                 $@"
